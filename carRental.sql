@@ -47,7 +47,7 @@ CREATE TABLE carRental.rents (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION);
 
-# #####################################
+
 
 
 INSERT INTO users values(0,"admin", "admin","admin", "admin", "xxxxx", 000000000,"admin");

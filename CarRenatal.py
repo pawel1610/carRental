@@ -11,7 +11,7 @@ class Menu:
             print("Witaj w wypożyczalni samochodów")
             self.menuWelcome()
         except:
-            print("błędne dane logowania do serwera")
+            print("Wprowadziłeś błędne dane, nastąpiło wylogowanie")
 
     def menuWelcome(self):
         dec = input("Wybierz:\n1-Logowanie\n2-Rejestracja")
@@ -40,20 +40,23 @@ class Menu:
             self.log()
 
     def menuAdmin(self):
-        dec = input("Jesteś w menu admin\n1 - wynajmy\n2 - użytkownicy\n3 - samochody")
+        dec = input("Jesteś w menu admin\n1 - wynajmy\n2 - użytkownicy\n3 - samochody\n4 - Wyloguj")
         if dec == "1":
             Rent.rentsMenu(self)
         elif dec == "2":
             User.usersMenu(self)
         elif dec == "3":
             Car.carsMenu(self)
+        elif dec == "4":
+            print("Do zobaczenia!")
+            self.conn.close()
         else:
             print("Błędny wybór")
             self.menuAdmin()
 
     def menuCustomer(self,login):
         dec = input("Jesteś w menu klienta:\n1 - Zarezerwuj wynajem\n2 - Twoje wynajmy\n"
-                    "3 - Anuluj wynajem\n4 - Twoje dane\n5 - Edytuj Twoje dane kontaktowe")
+                    "3 - Anuluj wynajem\n4 - Twoje dane\n5 - Edytuj Twoje dane kontaktowe\n6 - Wyloguj")
         if dec == "1":
             Rent.newRent(self,login)
             self.menuCustomer(login)
@@ -70,6 +73,12 @@ class Menu:
             self.menuCustomer(login)
         elif dec == "5":
             User.editUserContact(self,login)
+            self.menuCustomer(login)
+        elif dec == "6":
+            print("Do zobaczenia!")
+            self.conn.close()
+        else:
+            print("Błędny wybór")
             self.menuCustomer(login)
 
 
@@ -187,11 +196,16 @@ class Rent:
 
     def editRent(self):
         Rent.rentsList(self)
-        id = input("podaj id wynajmu, który chcesz edytować")
-        print("podaj nową datę wynajmu w formacie YYYY-MM-DD")
-        newDate = datetime.date(int(input('podaj rok')), int(input('podaj miesiac')), int(input('podaj dzien')))
-        print("podaj nową datę zakończenia w formacie YYYY-MM-DD")
-        newDate2 = datetime.date(int(input('podaj rok')), int(input('podaj miesiac')), int(input('podaj dzien')))
+        id = input("Podaj numer wynajmu, który chcesz edytować")
+        print("Podaj nową datę wynajmu w formacie YYYY-MM-DD")
+        year = int(input('podaj rok'))
+        month = int(input('podaj miesiac'))
+        day = int(input('podaj dzien'))
+        newDate = datetime.date(year, month, day)
+        year2 = int(input('podaj rok'))
+        month2 = int(input('podaj miesiac'))
+        day2 = int(input('podaj dzien'))
+        newDate2 = datetime.date(year2, month2, day2)
         now = date.today()
         if newDate >= now and newDate2 >= now and newDate2 >= newDate:
             self.c.execute("UPDATE rents SET rent_start = %s WHERE rent_id=%s",(newDate,id))
@@ -275,7 +289,7 @@ class Rent:
                        " cars.car_id = rents.car_id and users.login = %s", (login))
         Rent.displayRents(self)
 
-    def calculatePrice(self,carId,startDate,endDate):
+    def calculatePrice(self,carId,startDate,endDate): #oblicz cene całego wynajmu
 
         self.c.execute("select price from cars where car_id = %s", (carId))
         getPrice = self.c.fetchall()
@@ -306,7 +320,7 @@ class Rent:
             self.conn.rollback()
             print("powrot do menu")
 
-    def isCarAvailable(self,carId,startDate,endDate,login):
+    def isCarAvailable(self,carId,startDate,endDate,login): # sprawdza czy dane auto nie jest zarezerwowoane w terminie
         now = date.today()
         if startDate < now:
             print("Podałeś przeszłą datę wynajmu")
@@ -544,7 +558,7 @@ class Car:
     def addCar(self):
         brand = input("podaj markę")
         model = input("podaj model")
-        cls = input("podaj klasę")
+        cls = input("podaj klasę: 'mini' 'compact'  'medium'  'standard'  'premium'")
         year = input("podaj rocznik")
         regnbr = input("podaj Numer rejestracyjny")
         price = float(input("podaj cenę"))
