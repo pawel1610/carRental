@@ -5,7 +5,6 @@ from datetime import date
 
 class Menu:
 
-
     def __init__(self):
         try:
             self.conn = pymysql.connect("localhost", "root", "root", "carrental")
@@ -24,6 +23,7 @@ class Menu:
             self.log()
 
     def log(self):
+
         login = input("podaj login")
         passw = input("podaj haslo")
         self.c = self.conn.cursor()
@@ -34,7 +34,7 @@ class Menu:
             if logResult[0][7] == "admin":
                 self.menuAdmin()
             else:
-                self.menuCustomer()
+                self.menuCustomer(login)
         else:
             print("Błędne hasło lub login")
             self.log()
@@ -51,25 +51,26 @@ class Menu:
             print("Błędny wybór")
             self.menuAdmin()
 
-    def menuCustomer(self):
+    def menuCustomer(self,login):
         dec = input("Jesteś w menu klienta:\n1 - Zarezerwuj wynajem\n2 - Twoje wynajmy\n"
-                    "3 - Anuluj wynajem\n4 - Twoje dane\n5 - Edytuj Twoje dane")
+                    "3 - Anuluj wynajem\n4 - Twoje dane\n5 - Edytuj Twoje dane kontaktowe")
         if dec == "1":
-            self.menuCustomer()
+            Rent.newRent(self,login)
+            self.menuCustomer(login)
         elif dec == "2":
-            print()
-            self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class,rents."
-                           "order_date, rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as"
-                           " total_price from rents, cars, users where users.user_id = rents.user_id and"
-                           " cars.car_id = rents.car_id and users.login = %s", (login))
-            Rent.displayRents(self)
-            self.menuCustomer()
+            Rent.diplayUserRentDetails(self,login)
+            self.menuCustomer(login)
         elif dec == "3":
-            self.menuCustomer()
+            Rent.diplayUserRentDetails(self, login)
+            Rent.delRentUser(self,login)
+            self.menuCustomer(login)
         elif dec == "4":
-            self.menuCustomer()
+            self.c.execute("SELECT * FROM users WHERE login = %s", (login))
+            User.displayList(self)
+            self.menuCustomer(login)
         elif dec == "5":
-            self.menuCustomer()
+            User.editUserContact(self,login)
+            self.menuCustomer(login)
 
 
 class Rent:
@@ -108,20 +109,20 @@ class Rent:
     def rentsList(self):
         self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class, "
                        "rents.order_date,"
-                       " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price"
+                       " rents.rent_start, rents.rent_end, cars.price"
                        " from rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id")
         Rent.displayRents(self)
 
     def activeRents(self):
         self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class, rents.order_date,"
-                       " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price"
+                       " rents.rent_start, rents.rent_end, cars.price"
                        " from rents, cars, users where users.user_id = rents.user_id and"
                        " cars.car_id = rents.car_id and rent_end >= CURDATE()")
         Rent.displayRents(self)
 
     def pastRents(self):
         self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class, rents.order_date,"
-                       " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price"
+                       " rents.rent_start, rents.rent_end, cars.price"
                        " from rents, cars, users where users.user_id = rents.user_id and"
                        " cars.car_id = rents.car_id and rent_end < CURDATE()")
         Rent.displayRents(self)
@@ -132,15 +133,14 @@ class Rent:
         dec = input("1 - wszystkie wynajmy\n2 - aktywne\n3 - zakończone")
         if dec == "1":
             self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class,"
-                           " rents.order_date, rents.rent_start, rents.rent_end,"
-                           " (rent_end-rent_start)*cars.price as total_price from"
-                           " rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
+                           " rents.order_date, rents.rent_start, rents.rent_end,cars.price from rents, cars,"
+                           " users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
                            " users.user_id = %s",(userId))
             Rent.displayRents(self)
         elif dec == "2":
             self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model,"
                            " cars.class, rents.order_date,"
-                           " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price from"
+                           " rents.rent_start, rents.rent_end, cars.price from"
                            " rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
                            " users.user_id = %s and rent_end >= CURDATE()", (userId))
 
@@ -148,7 +148,7 @@ class Rent:
         elif dec == "3":
             self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model,"
                            " cars.class, rents.order_date,"
-                           " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price from"
+                           " rents.rent_start, rents.rent_end, cars.price from"
                            " rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
                            " users.user_id = %s and rent_end < CURDATE()", (userId))
             Rent.displayRents(self)
@@ -158,26 +158,26 @@ class Rent:
 
     def rentListByCar(self):
         Car.carsMenu(self)
-        carId = input("podaj ID klineta")
+        carId = input("podaj ID samochodu")
         dec = input("1 - wszystkie wynajmy\n2 - aktywne\n3 - zakończone")
         if dec == "1":
             self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand,"
                            " cars.model, cars.class, rents.order_date,"
-                           " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price from"
+                           " rents.rent_start, rents.rent_end, cars.price from"
                            " rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
                            " car.car_id = %s)", (carId))
             Rent.displayRents(self)
         elif dec == "2":
             self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model,"
                            " cars.class, rents.order_date,"
-                           " rents.rent_start, rents.rent_end, (rent_end-rent_start)*cars.price as total_price from"
+                           " rents.rent_start, rents.rent_end, cars.price from"
                            " rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
                            " car.car_id = %s and rent_end >= CURDATE())", (carId))
             Rent.displayRents(self)
         elif dec == "3":
             self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class, "
                            "rents.order_date, rents.rent_start, rents.rent_end,"
-                           " (rent_end-rent_start)*cars.price as total_price from"
+                           " cars.price  from"
                            " rents, cars, users where users.user_id = rents.user_id and cars.car_id = rents.car_id and"
                            " car.car_id = %s and rent_end < CURDATE())", (carId))
             Rent.displayRents(self)
@@ -224,6 +224,28 @@ class Rent:
                 self.conn.rollback()
                 print("powrot do menu")
 
+    def delRentUser(self,login):
+        id = input("Podaj id wynajmu, który chcesz anulować")
+        self.c.execute("SELECT rent_start FROM rents,users WHERE rents.user_id = users.user_id and rent_id = %s"
+                       " and login = %s", (id,login))
+        print(login)
+        result = self.c.fetchall()
+        now = date.today()
+        if len(result) == 1:
+            if result[0][0] <= now:
+                print("Nie można anulować rozpoczętego wynajmu")
+            else:
+                self.c.execute("DELETE FROM rents WHERE rent_id = %s", (id))
+                dec = input("Czy na pewno chcesz anulowac wynajem T/N").upper()
+                if dec == "T":
+                    self.conn.commit()
+                    print("Anulowano wynajem")
+                else:
+                    self.conn.rollback()
+                    print("Powrot do menu")
+        else:
+            print("Nie masz uprawnień do anlucaji tego wynajmu")
+
     def displayRents(self):
         list = self.c.fetchall()
         if len(list) == 0:
@@ -239,12 +261,75 @@ class Rent:
                 DateOfOrder = 6
                 StartDate   = 7
                 EndDate     = 8
-                TotalPrice  = 9
+                Price       = 9
 
                 print("numer wynajmu: %2s Imie: %-10s Nazwisko: %-10s Marka: %-8s Model: %-8s klasa: %-12s "
                       "Data rezerwacji %-12s Data rozpoczęcia: %-12s Data zakończenia: %-12s Koszt: %-8s"
                       % (row[RentId], row[Name], row[Surname], row[Brand], row[Model], row[Class],
-                         row[DateOfOrder], row[StartDate], row[EndDate], row[TotalPrice]))
+                         row[DateOfOrder], row[StartDate], row[EndDate], (((row[EndDate]-row[StartDate]).days+1)*row[Price])))
+
+    def diplayUserRentDetails(self, login):
+        self.c.execute("SELECT rents.rent_id, users.name, users.surname, cars.brand, cars.model, cars.class,rents."
+                       "order_date, rents.rent_start, rents.rent_end, cars.price from rents, cars,"
+                       " users where users.user_id = rents.user_id and"
+                       " cars.car_id = rents.car_id and users.login = %s", (login))
+        Rent.displayRents(self)
+
+    def calculatePrice(self,carId,startDate,endDate):
+
+        self.c.execute("select price from cars where car_id = %s", (carId))
+        getPrice = self.c.fetchall()
+        days =endDate-startDate
+        price = (days.days+1)*(getPrice[0][0])
+        print("Cena wynajmu wynosi " + str(price) + " PLN")
+
+    def newRent(self,login):
+        print("Nasze samochody:")
+        Car.carList(self)
+
+        carId = input("Ktory samochód wybierasz?")
+        print("Podaj datę rozpoczęcia wynajmu w formacie YYYY-MM-DD")
+        startDate = datetime.date(int(input('Rok')), int(input('Miesiac')), int(input('Dzien')))
+        print("podaj  datę zakończenia w formacie YYYY-MM-DD")
+        endDate = datetime.date(int(input('podaj rok')), int(input('podaj miesiac')), int(input('podaj dzien')))
+
+        Rent.isCarAvailable(self, carId, startDate, endDate,login)
+        Rent.calculatePrice(self, carId, startDate, endDate)
+        self.c.execute("select user_id from users where login = %s",(login))
+        userId=self.c.fetchall()
+        self.c.execute("INSERT INTO rents VALUES (0,%s,%s,CURDATE(),%s,%s)",((userId[0][0]),carId,startDate,endDate))
+        dec = input("Czy poteirdzasz rezerwację? T/N").upper()
+        if dec == "T":
+            self.conn.commit()
+            print("Zarezerwowałeś samochód")
+        else:
+            self.conn.rollback()
+            print("powrot do menu")
+
+    def isCarAvailable(self,carId,startDate,endDate,login):
+        now = date.today()
+        if startDate < now:
+            print("Podałeś przeszłą datę wynajmu")
+        elif startDate > endDate:
+            print("Wynajem nie może zakończyć się przed jego rozpoczęciem")
+        else:
+            self.c.execute("SELECT rent_start, rent_end FROM rents WHERE rent_end >= CURDATE() and car_id = %s",(carId))
+            result = self.c.fetchall()
+            if len(result) == 0:
+                print("Samochód jest dostępny")
+            else:
+                availableSum = 0
+                for i in range(0, len(result)):
+                    if startDate <= result[i][1] and endDate >= result[i][0]:
+                        availableSum = availableSum
+                    else:
+                        availableSum += 1
+                        i += 1
+                if availableSum == len(result):
+                    print("Samochód jest dostępny")
+                else:
+                    print("Samochód niedostępny w tym terminie")
+                    self.menuCustomer(login)
 
 
 class User:
@@ -289,7 +374,6 @@ class User:
         User.displayList(self)
 
     def newCustomer(self):
-
         name = input("Podaj imie")
         surname = input("Podaj nazwisko")
         login = input("Podaj login")
@@ -392,6 +476,35 @@ class User:
                 print("powrot do menu")
         else:
             User.editUser(self)
+
+    def editUserContact(self,login):
+        print(login)
+        self.c.execute("SELECT * FROM users WHERE login = %s", (login))
+        User.displayList(self)
+        dec = input("Co chesz edytować? :\n1 - adres\n2 - telefon")
+        if dec == "1":
+            new = input("Podaj nowy adres")
+            self.c.execute("UPDATE users SET adress = %s WHERE login=%s", (new, login))
+            dec = input("Czy na pewno chcesz zmienic adres T/N").upper()
+            if dec == "T":
+                self.conn.commit()
+                print("Zmieniono adres na " + new)
+            else:
+                self.conn.rollback()
+                print("Powrot do menu")
+        elif dec == "2":
+            new = input("Podaj nowy numer telefonu")
+            self.c.execute("UPDATE users SET phone = %s WHERE login=%s", (new, login))
+            dec = input("Czy na pewno chcesz zmienic numer telefonu T/N").upper()
+            if dec == "T":
+                self.conn.commit()
+                print("Zmieniono numer telefonu na " + new)
+            else:
+                self.conn.rollback()
+                print("Powrot do menu")
+        else:
+            print("Błędny wybór")
+            self.menuCustomer(login)
 
     def displayList(self):
         list = self.c.fetchall()

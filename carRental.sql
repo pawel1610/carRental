@@ -23,7 +23,7 @@ CREATE TABLE carRental.cars (
   class SET('mini', 'compact', 'medium', 'standard', 'premium') NOT NULL,
   year INT NOT NULL,
   reg_nr TEXT NOT NULL,
-  price  FLOAT NOT NULL,
+  price FLOAT NOT NULL,
   PRIMARY KEY (car_id));
   
 CREATE TABLE carRental.rents (
@@ -32,7 +32,7 @@ CREATE TABLE carRental.rents (
   car_id INT NOT NULL,
   order_date DATE NOT NULL,
   rent_start DATE NOT NULL,
-  rent_end DATE NOT NULL,
+  rent_end DATE NOT NULL,  
   PRIMARY KEY (rent_id),
   INDEX car_id_idx (car_id ASC),
   INDEX user_id_idx (user_id ASC),
@@ -71,24 +71,20 @@ INSERT INTO cars values(0,"Audi", "A6", "premium", 2018, "WW99999", 400);
 INSERT INTO cars values(0,"BMW", "530", "premium", 2017, "WW12222", 430);
 
 
-INSERT INTO cars values(0,'mercedes','s500','premium',2019,'ww34234',600);
 
 
 
 INSERT INTO rents values(0,4,7,'2019-01-31','2019-03-10','2019-03-17');
 INSERT INTO rents values(0,2,3,'2019-01-31','2019-02-01','2019-02-27');
 INSERT INTO rents values(0,3,5,'2019-01-31','2019-02-14','2019-02-15');
+INSERT INTO rents values(0,2,3,'2019-01-10','2019-01-12','2019-02-03');
+INSERT INTO rents values(0,2,3,'2019-01-10','2019-06-30','2019-07-01');
+INSERT INTO rents values(0,2,3,'2019-01-10','2019-01-28','2019-01-30');
 
 
 select * from users;
 select * from cars;
 select * from rents;
-
-
-SELECT * from rents, users WHERE rents.user_id = users.user_id and users.login = jan83;
-
-
-
 
 
 
